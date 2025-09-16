@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Caesar Cipher — Simple Web</title>
+  <style>
+    :root { --line:#e5e7eb; --text:#0f172a; --muted:#475569; --accent:#2563eb; --ok:#059669; --err:#dc2626; }
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Pretendard,Segoe UI,Arial,sans-serif;color:var(--text);background:#fff}
+    .wrap{max-width:900px;margin:28px auto;padding:0 16px}
+    h1{margin:0 0 8px;font-size:24px} .sub{margin:0 0 14px;color:var(--muted)}
+    .row{display:flex;gap:10px;align-items:center;margin:8px 0 16px}
+    label{font-size:14px;color:var(--muted)} input[type=number]{width:90px;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+    .grid{display:grid;gap:14px;grid-template-columns:1fr} @media(min-width:780px){.grid{grid-template-columns:1fr 1fr}}
+    .card{border:1px solid var(--line);border-radius:12px;padding:14px}
+    .card label{display:block;margin-bottom:6px}
+    textarea{width:100%;min-height:170px;resize:vertical;padding:12px;border:1px solid var(--line);border-radius:10px;font:14px/1.6 ui-monospace,Consolas,monospace}
+    .controls{display:flex;gap:8px;align-items:center;margin-top:10px}
+    button{padding:10px 14px;border-radius:10px;border:1px solid var(--line);cursor:pointer;font-weight:700;background:#f8fafc}
+    .primary{background:#eef2ff;color:#1d4ed8;border-color:#c7d2fe}
+    .success{background:#ecfdf5;color:#047857;border-color:#a7f3d0}
+    .msg{margin-top:8px;font-size:13px} .ok{color:var(--ok);font-weight:700} .err{color:var(--err);font-weight:700}
+    hr{border:none;border-top:1px dashed var(--line);margin:16px 0}
+    .kbd{padding:2px 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;background:#fff}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>시저 암호 (간단 웹)</h1>
+    <p class="sub">영문/공백만 허용 · 기본 이동값 3 · 암호문은 <b>대문자</b>, 복호문은 <b>소문자</b></p>
+
+    <div class="row">
+      <label for="shift"><b>이동값</b>(1~25)</label>
+      <input id="shift" type="number" min="1" max="25" value="3" />
+      <span class="sub">예: 3이면 a → D, b → E</span>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <label for="plain">평문 (letters + space)</label>
+        <textarea id="plain" placeholder="예: meet at midnight"></textarea>
+        <div class="controls">
+          <button id="enc" class="primary">Encrypt →</button>
+        </div>
+        <div id="msgL" class="msg"></div>
+      </section>
+
+      <section class="card">
+        <label for="cipher">암호문 (letters + space)</label>
+        <textarea id="cipher" placeholder="예: PHHW DW PLGQLJKW"></textarea>
+        <div class="controls">
+          <button id="dec" class="success">← Decrypt</button>
+        </div>
+        <div id="msgR" class="msg"></div>
+      </section>
+    </div>
+
+    <hr />
+    <p class="sub">단축키: <span class="kbd">Ctrl/⌘</span> + <span class="kbd">Enter</span> (왼쪽=암호화, 오른쪽=복호화)</p>
+  </div>
+
+  <script>
+    // === 간단 검증: 영문 + 공백만 ===
+    const alphaSpace = /^[A-Za-z ]+$/;
+    const $ = id => document.getElementById(id);
+
+    function getShift(){
+      const v = parseInt($("shift").value, 10);
+      return (isFinite(v) && v >= 1 && v <= 25) ? v : 3;
+    }
+    function validate(text){
+      if(!text || text.trim()==="") return {ok:false, msg:"빈 문자열은 허용되지 않습니다."};
+      if(!alphaSpace.test(text))    return {ok:false, msg:"영문자와 공백만 입력하세요."};
+      return {ok:true};
+    }
+
+    // === 초보자 친화: 문자열 인덱스 방식 ===
+    const ALPHABET = "abcdefghijklmnopqrstuvwxyz";
+    const ALPHABET_UP = ALPHABET.toUpperCase();
+
+    function encrypt(str, shift){
+      let out = "";
+      for(const ch of str){
+        if(ch === " "){ out += " "; continue; }
+        const i = ALPHABET.indexOf(ch.toLowerCase()); // 0~25
+        out += ALPHABET_UP[(i + shift) % 26];         // 대문자
+      }
+      return out;
+    }
+    function decrypt(str, shift){
+      let out = "";
+      for(const ch of str){
+        if(ch === " "){ out += " "; continue; }
+        const i = ALPHABET.indexOf(ch.toLowerCase());
+        out += ALPHABET[(i - shift + 26) % 26];       // 소문자
+      }
+      return out;
+    }
+
+    // === 이벤트 ===
+    $("enc").addEventListener("click", ()=>{
+      const t = $("plain").value, v = validate(t);
+      const m = $("msgL"); m.className = "msg";
+      if(!v.ok){ m.textContent=v.msg; m.classList.add("err"); return; }
+      $("cipher").value = encrypt(t, getShift());
+      m.textContent="암호화 완료"; m.classList.add("ok");
+      $("msgR").textContent="";
+    });
+
+    $("dec").addEventListener("click", ()=>{
+      const t = $("cipher").value, v = validate(t);
+      const m = $("msgR"); m.className = "msg";
+      if(!v.ok){ m.textContent=v.msg; m.classList.add("err"); return; }
+      $("plain").value = decrypt(t, getShift());
+      m.textContent="복호화 완료"; m.classList.add("ok");
+      $("msgL").textContent="";
+    });
+
+    // 단축키: Ctrl/Cmd + Enter
+    window.addEventListener("keydown", (e)=>{
+      if((e.ctrlKey||e.metaKey) && e.key==="Enter"){
+        if(document.activeElement.id==="plain") $("enc").click();
+        else if(document.activeElement.id==="cipher") $("dec").click();
+      }
+    });
+  </script>
+</body>
+</html>

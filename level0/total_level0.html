@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>시저 암호 3가지 — 발표용 데모</title>
+  <style>
+    :root{
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary-a: #6366f1; /* indigo */
+      --primary-b: #22c55e; /* green */
+      --accent: #f59e0b;    /* amber */
+      --ring: rgba(99,102,241,.2);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header{
+      background: linear-gradient(135deg, var(--primary-a), var(--primary-b));
+      color:#fff; padding: 48px 24px; text-align:center;
+    }
+    header h1{margin:0; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.02em}
+    header p{margin:10px 0 0; opacity:.95; font-size: clamp(14px, 2vw, 18px)}
+    .wrap{max-width:1100px; margin:-32px auto 56px; padding: 0 16px}
+    .grid{display:grid; grid-template-columns: 1.1fr .9fr; gap:20px}
+    @media (max-width: 980px){ .grid{grid-template-columns: 1fr;}}
+    .card{background:var(--card); border-radius: 18px; box-shadow: 0 10px 30px rgba(2,6,23,.08); border:1px solid rgba(15,23,42,.06)}
+    .card h2{margin:0 0 14px; font-size: 20px}
+    .section{padding:22px}
+    .controls{display:grid; gap:14px}
+    label{font-weight:600; font-size:14px; color:var(--muted)}
+    textarea, input[type="text"]{
+      width:100%; min-height: 76px; border:1.5px solid rgba(2,6,23,.08); border-radius:14px; padding:14px 14px; font-size:16px; outline:none; background:#fbfdff;
+    }
+    textarea:focus, input[type="range"]:focus{box-shadow:0 0 0 6px var(--ring)}
+    .row{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+    .method-tabs{display:flex; gap:8px; flex-wrap:wrap}
+    .tab{
+      border:1.5px solid rgba(15,23,42,.12); background:#fff; color:#0f172a;
+      padding:10px 14px; border-radius:999px; cursor:pointer; font-weight:700; font-size:14px;
+    }
+    .tab.active{background:linear-gradient(135deg, #eef2ff, #ecfeff); border-color:#c7d2fe}
+    .shift{
+      display:grid; grid-template-columns: 1fr auto; gap:12px; align-items:center
+    }
+    input[type="range"]{width:100%}
+    .pill{background:#eef2ff; color:#3730a3; padding:4px 10px; border-radius:999px; font-weight:700; font-size:13px}
+    .btns{display:flex; gap:10px; flex-wrap:wrap}
+    .btn{
+      appearance:none; border:0; border-radius:12px; padding:12px 16px; font-weight:800; cursor:pointer; font-size:15px;
+      box-shadow:0 8px 20px rgba(2,6,23,.08);
+    }
+    .btn.primary{color:#fff; background:linear-gradient(135deg, var(--primary-a), var(--primary-b))}
+    .btn.secondary{background:#f1f5f9}
+    .btn:active{transform: translateY(1px)}
+
+    .kpi{
+      display:grid; gap:12px; grid-template-columns: 1fr; margin-top:8px
+    }
+    .kpi .line{background:#f8fafc; border-radius:12px; padding:10px 12px; border:1px dashed rgba(2,6,23,.08)}
+    .kpi .label{font-size:12px; color:var(--muted); font-weight:700}
+    .kpi .value{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:16px; word-break: break-all}
+
+    .mapping{padding:18px; border-top:1px solid rgba(2,6,23,.06)}
+    .maprow{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0}
+    .tag{background:#fff; border:1px solid rgba(15,23,42,.12); padding:6px 10px; border-radius:10px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px}
+
+    details{background:#fff; border-radius:14px; border:1px solid rgba(15,23,42,.12); padding:14px 16px}
+    details summary{cursor:pointer; font-weight:900}
+    .muted{color:var(--muted)}
+    footer{max-width:1100px; margin:24px auto 56px; padding:0 16px; color:var(--muted); font-size:13px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>시저 암호 3가지 — 시연 & 시각화</h1>
+    <p>1) 시저만 · 2) 시저→역순치환 · 3) 시저→모음·자음 치환 (밝은 테마, 발표용)</p>
+  </header>
+
+  <div class="wrap">
+    <div class="grid">
+      <!-- LEFT: Controls -->
+      <div class="card">
+        <div class="section">
+          <h2>입력 · 방법 · 실행</h2>
+          <div class="controls">
+            <div>
+              <label for="msg">평문 입력</label>
+              <textarea id="msg" placeholder="예) APPLE"></textarea>
+            </div>
+
+            <div class="shift">
+              <div>
+                <label for="shift">시프트 (k): <span class="pill" id="shiftVal">3</span></label>
+                <input id="shift" type="range" min="1" max="25" value="3" />
+              </div>
+              <div>
+                <button class="btn secondary" id="resetShift">기본값 3</button>
+              </div>
+            </div>
+
+            <div>
+              <label>방법 선택</label>
+              <div class="method-tabs" role="tablist">
+                <button class="tab active" data-method="caesar" aria-selected="true">① 시저만</button>
+                <button class="tab" data-method="reverse">② 시저→역순치환</button>
+                <button class="tab" data-method="vowel">③ 시저→모음·자음</button>
+              </div>
+            </div>
+
+            <div class="btns">
+              <button class="btn primary" id="doEncrypt">암호화</button>
+              <button class="btn secondary" id="doDecrypt">복호화</button>
+              <button class="btn secondary" id="doClear">지우기</button>
+            </div>
+
+            <div class="kpi">
+              <div class="line">
+                <div class="label">[1차] 시저 결과</div>
+                <div class="value" id="out1">—</div>
+              </div>
+              <div class="line">
+                <div class="label">[최종] 2차 적용 결과</div>
+                <div class="value" id="out2">—</div>
+              </div>
+              <div class="line">
+                <div class="label">[복호] 원문 복원</div>
+                <div class="value" id="out3">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mapping">
+          <div class="maprow"><strong>알파벳(plain)</strong></div>
+          <div class="maprow" id="row-plain"></div>
+          <div class="maprow"><strong>[1차] 시저(+k) 알파벳열 S</strong></div>
+          <div class="maprow" id="row-shift"></div>
+          <div class="maprow"><strong id="row-stage2-title">[2차] —</strong></div>
+          <div class="maprow" id="row-stage2"></div>
+          <div class="maprow"><span class="muted" id="pair-hint">※ 2차 매핑쌍 예시</span></div>
+          <div class="maprow" id="row-pairs"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Explanations -->
+      <div class="card">
+        <div class="section">
+          <h2>알고리즘 요약 (발표 슬라이드용)</h2>
+          <details open>
+            <summary>핵심 개념</summary>
+            <ul>
+              <li>문자→인덱스 매핑: a=0…z=25 (공백 보존).</li>
+              <li>1차 시저: p′=(p+k) mod 26 → 대문자.</li>
+              <li>2차(방법별):
+                <ul>
+                  <li>② 역순치환: 시저열 S를 뒤집은 R과 <strong>동일 인덱스 치환</strong>(S[i]→R[i]).</li>
+                  <li>③ 모음·자음: 목표열 T = A,E,I,O,U + (나머지 자음)에서 <strong>S[i]→T[i]</strong>.</li>
+                </ul>
+              </li>
+            </ul>
+          </details>
+          <div style="height:10px"></div>
+          <details>
+            <summary>절차</summary>
+            <ol>
+              <li>입력 검증(영문/공백).</li>
+              <li>1차 시저(+k).</li>
+              <li>2차 방법 적용(없음/역순/모음·자음).</li>
+              <li>복호: 2차 역치환 → 시저(−k).</li>
+            </ol>
+          </details>
+          <div style="height:10px"></div>
+          <details>
+            <summary>자료구조</summary>
+            <ul>
+              <li>길이 26 리스트 S(시저열), R(역순) 또는 T(모음우선).</li>
+              <li>딕셔너리 매핑 2개: 정방향/역방향(조회 O(1)).</li>
+              <li>검증용 set(허용 문자).</li>
+            </ul>
+          </details>
+          <div style="height:10px"></div>
+          <details>
+            <summary>복잡도</summary>
+            <p>암·복호 모두 입력 길이 n에 대해 문자당 상수 작업 → <strong>시간 O(n)</strong>. 테이블 사전계산은 26자 고정 → <strong>O(1)</strong>. 추가 공간도 상수.</p>
+          </details>
+          <div style="height:10px"></div>
+          <details>
+            <summary>예시 검증</summary>
+            <ul>
+              <li>① APPLE → <strong>DSSOH</strong></li>
+              <li>② APPLE → DSSOH → <strong>CNNRY</strong></li>
+              <li>③ APPLE → DSSOH → <strong>ANNJU</strong></li>
+            </ul>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    ⓘ 발표 팁: 방법 탭을 바꾸거나 시프트 값을 움직이면 아래 매핑표가 즉시 갱신됩니다. 입력 예시로 <strong>APPLE</strong>을 사용해보세요.
+  </footer>
+
+  <script>
+    // ====== 공통 상수/유틸 ======
+    const ALP = 'abcdefghijklmnopqrstuvwxyz';
+    const UALP = ALP.toUpperCase();
+    const VOWELS = new Set(['A','E','I','O','U']);
+
+    const el = sel => document.querySelector(sel);
+    const els = sel => Array.from(document.querySelectorAll(sel));
+
+    function isValid(s){ return /^[A-Za-z ]+$/.test(s); }
+    function idx(ch){ return ALP.indexOf(ch.toLowerCase()); }
+    function shiftAlphabet(k){ return Array.from({length:26}, (_,i)=> UALP[(i+k)%26]); }
+
+    function encryptCaesar(msg, k){
+      let out = '';
+      for(const ch of msg){
+        if(ch===' '){ out += ' '; continue; }
+        const i = idx(ch); if(i<0){ return null; }
+        out += UALP[(i+k)%26];
+      }
+      return out;
+    }
+    function decryptCaesar(ct, k){
+      let out='';
+      for(const ch of ct){
+        if(ch===' '){ out += ' '; continue; }
+        const i = idx(ch); if(i<0){ return null; }
+        out += ALP[(i-k+26)%26];
+      }
+      return out;
+    }
+
+    // ====== 방법 ②: 역순 치환 ======
+    function makeMapsReverse(k){
+      const S = shiftAlphabet(k);
+      const R = [...S].reverse();
+      const fwd = {}; const bwd = {};
+      for(let i=0;i<26;i++){ fwd[S[i]]=R[i]; bwd[R[i]]=S[i]; }
+      return {S,R,fwd,bwd};
+    }
+    function encryptReverseAfterCaesar(msg,k){
+      const c1 = encryptCaesar(msg,k);
+      if(c1==null) return {c1:null,c2:null};
+      const {fwd} = makeMapsReverse(k);
+      let c2='';
+      for(const ch of c1){ c2 += (ch===' ')? ' ' : fwd[ch]; }
+      return {c1, c2};
+    }
+    function decryptReverseAfterCaesar(c2,k){
+      const {bwd} = makeMapsReverse(k);
+      let c1='';
+      for(const ch of c2){ c1 += (ch===' ')? ' ' : bwd[ch]; }
+      return decryptCaesar(c1,k);
+    }
+
+    // ====== 방법 ③: 모음·자음 치환 ======
+    function makeTargetVowelFirst(){
+      const vowels = [...UALP].filter(c=>VOWELS.has(c));
+      const cons = [...UALP].filter(c=>!VOWELS.has(c));
+      return [...vowels, ...cons];
+    }
+    function makeMapsVowel(k){
+      const S = shiftAlphabet(k);
+      const T = makeTargetVowelFirst();
+      const fwd = {}; const bwd = {};
+      for(let i=0;i<26;i++){ fwd[S[i]]=T[i]; bwd[T[i]]=S[i]; }
+      return {S,T,fwd,bwd};
+    }
+    function encryptVowelAfterCaesar(msg,k){
+      const c1 = encryptCaesar(msg,k);
+      if(c1==null) return {c1:null,c2:null};
+      const {fwd} = makeMapsVowel(k);
+      let c2='';
+      for(const ch of c1){ c2 += (ch===' ')? ' ' : fwd[ch]; }
+      return {c1,c2};
+    }
+    function decryptVowelAfterCaesar(c2,k){
+      const {bwd} = makeMapsVowel(k);
+      let c1='';
+      for(const ch of c2){ c1 += (ch===' ')? ' ' : bwd[ch]; }
+      return decryptCaesar(c1,k);
+    }
+
+    // ====== UI 바인딩 ======
+    let method = 'caesar';
+
+    function updateMapping(){
+      const k = Number(el('#shift').value);
+      const plain = [...UALP];
+      const rowPlain = el('#row-plain');
+      rowPlain.innerHTML = plain.map(x=>`<span class="tag">${x}</span>`).join('');
+
+      const S = shiftAlphabet(k);
+      el('#row-shift').innerHTML = S.map(x=>`<span class="tag">${x}</span>`).join('');
+
+      const title = el('#row-stage2-title');
+      const row2 = el('#row-stage2');
+      const pairs = el('#row-pairs');
+
+      if(method==='caesar'){
+        title.textContent = '[2차] (해당 없음)';
+        row2.innerHTML = '<span class="muted">— 1단계만 수행 —</span>';
+        pairs.innerHTML = '';
+      } else if(method==='reverse'){
+        const {R} = makeMapsReverse(k);
+        title.textContent = '[2차] S의 역순 R';
+        row2.innerHTML = R.map(x=>`<span class="tag">${x}</span>`).join('');
+        pairs.innerHTML = S.map((s,i)=>`<span class="tag">${s}→${R[i]}</span>`).join('');
+      } else {
+        const {T} = makeMapsVowel(k);
+        title.textContent = '[2차] 모음·자음 목표열 T';
+        row2.innerHTML = T.map(x=>`<span class="tag">${x}</span>`).join('');
+        pairs.innerHTML = S.map((s,i)=>`<span class="tag">${s}→${T[i]}</span>`).join('');
+      }
+    }
+
+    function doEncrypt(){
+      const k = Number(el('#shift').value);
+      const msg = el('#msg').value.trim();
+      if(!msg){ alert('입력 문자열을 적어주세요.'); return; }
+      if(!isValid(msg)){ alert('영문/공백만 입력 가능합니다.'); return; }
+
+      let c1='—', c2='—';
+      if(method==='caesar'){
+        c1 = encryptCaesar(msg,k); c2 = c1;
+      } else if(method==='reverse'){
+        ({c1,c2} = encryptReverseAfterCaesar(msg,k));
+      } else {
+        ({c1,c2} = encryptVowelAfterCaesar(msg,k));
+      }
+      el('#out1').textContent = c1 ?? '에러';
+      el('#out2').textContent = c2 ?? '에러';
+      el('#out3').textContent = '— (복호 버튼을 눌러 확인)';
+    }
+
+    function doDecrypt(){
+      const k = Number(el('#shift').value);
+      const ct = el('#out2').textContent.trim();
+      if(!ct || ct==='—'){ alert('먼저 암호화를 실행하세요.'); return; }
+      let pt;
+      if(method==='caesar'){
+        pt = decryptCaesar(ct,k);
+      } else if(method==='reverse'){
+        pt = decryptReverseAfterCaesar(ct,k);
+      } else {
+        pt = decryptVowelAfterCaesar(ct,k);
+      }
+      el('#out3').textContent = pt ?? '에러';
+    }
+
+    // Events
+    els('.tab').forEach(t=>{
+      t.addEventListener('click', ()=>{
+        els('.tab').forEach(x=>{x.classList.remove('active'); x.setAttribute('aria-selected','false');});
+        t.classList.add('active'); t.setAttribute('aria-selected','true');
+        method = t.dataset.method;
+        updateMapping();
+        // 결과 초기화
+        el('#out1').textContent='—'; el('#out2').textContent='—'; el('#out3').textContent='—';
+      });
+    });
+
+    el('#shift').addEventListener('input', (e)=>{
+      el('#shiftVal').textContent = e.target.value;
+      updateMapping();
+    });
+
+    el('#resetShift').addEventListener('click', ()=>{
+      el('#shift').value = 3; el('#shiftVal').textContent = '3'; updateMapping();
+    });
+
+    el('#doEncrypt').addEventListener('click', doEncrypt);
+    el('#doDecrypt').addEventListener('click', doDecrypt);
+    el('#doClear').addEventListener('click', ()=>{
+      el('#msg').value=''; el('#out1').textContent='—'; el('#out2').textContent='—'; el('#out3').textContent='—';
+    });
+
+    // 초기화
+    el('#msg').value = 'APPLE';
+    updateMapping();
+  </script>
+</body>
+</html>
